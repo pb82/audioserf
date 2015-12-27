@@ -22,10 +22,9 @@ module.exports = class Parser {
     }
 
     parse(fd, filename, callback) {
-
         var f = filename.split("/");
-        if (f && f.length === 3) {
-            callback(null, new Tags(f[2], f[1], f[0], filename, Parser.FOR));
+        if (f && f.length === 4) {
+            callback(null, new Tags(f[1], f[2], f[3], filename, Parser.FOR));
         } else {
             callback(null, new Tags(filename, filename, filename, filename, Parser.FOR));
         }
