@@ -3,6 +3,7 @@
 var express = require('express')
     , logger = require('./logger')
     , Scanner = require('./scanner').Scanner
+    , db = require('./model')
     , config = require('./config');
 
 var App = express();
@@ -20,4 +21,6 @@ App.use(require('body-parser').urlencoded({
 App.use(require('body-parser').json());
 
 // Start
-require('./routes')(App, new Scanner(config.scanner.entry));
+db.sync(() => {
+    require('./routes')(App, new Scanner(config.scanner.entry));
+});

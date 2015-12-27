@@ -2,18 +2,31 @@
 
 var config = require('./config')
     , path = require('path')
-    , Pouch = require('pouchdb')
+    , db = require('./model')
     , logger = require('./logger');
 
 module.exports = function (app, scanner) {
     var port = config.server.port;
-    var db = new Pouch('db', { db: require('memdown') });
 
     // The scanner found a new audio file. Add it to the index
     scanner.on("index", (tag) => {
-        process.nextTick(() => {
-            db.put(tag);
-            logger(`Added ${tag.file} to index`);
+        db.Track.find({
+            where: {
+                file: tag.file
+            }
+        }).then((track) => {
+            if (track) {
+                logger(`${track.file} already in index`);
+            } else {
+                db.Track.create({
+                    title: tag.title,
+                    album: tag.album,
+                    artist: tag.artist,
+                    file: tag.file
+                }).then((inserted) => {
+                    logger(`Added ${inserted.file} to index`);
+                });
+            }
         });
     });
 
@@ -32,8 +45,10 @@ module.exports = function (app, scanner) {
      * Data for the status row
      */
     app.get('/status', (_, res) => {
-        db.info().then((info) => {
-            res.json({ total: info.doc_count });
+        db.Track.count().then((result) => {
+            res.json({
+                total: result
+            });
         });
     });
 
@@ -44,22 +59,21 @@ module.exports = function (app, scanner) {
      */
     app.get('/search', (req, res) => {
         var filterBy = req.query.by || "title";
-        var term = new RegExp(req.query.term, "i");
+
+        var search = {};
+        search[filterBy] = {
+            $like: ['%', req.query.term, '%'].join('')
+        };
 
         console.time("query");
-        db.allDocs({
-            include_docs: true
+
+        db.Track.findAll({
+            where: search
         }).then((result) => {
-            let filtered = result.rows.map((row) => row.doc).filter((doc) => term.test(doc[filterBy]));
             console.timeEnd("query");
-
             res.json({
-                result: filtered
+                result: result
             });
-
-        }).catch((err) => {
-            console.timeEnd("query");
-            logger.error("query error", err);
         });
     });
 

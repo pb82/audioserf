@@ -4,3 +4,4 @@ bower_components
 !.gitignore
 data
 npm-debug.log
+*.db

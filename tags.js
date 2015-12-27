@@ -5,7 +5,6 @@
  */
 module.exports = class {
     constructor(artist, album, title, file, type) {
-        this._id = file; // PouchDB id
         this.artist = artist;
         this.album = album;
         this.title = title;
