@@ -1,6 +1,9 @@
 "use strict";
 
-var parser = require("id3-parser")
+var id3p = require("id3-parser")
+    , fs = require("fs")
+    , parser = require("audio-metadata")
+    , logger = require("../logger")
     , Tags = require('../tags');
 
 module.exports = class Parser {
@@ -8,13 +11,24 @@ module.exports = class Parser {
         return "audio/mpeg";
     }
 
-    get HEADER_SIZE() {
-        return 1024;
-    }
-
-    parse(buffer, filename, callback) {
-        parser.parse(buffer).then((t) => {
-            callback(null, new Tags(t.artist, t.album, t.title, filename, Parser.FOR));
+    parse(fd, filename, callback) {
+        fs.readFile(fd, (err, data) => {
+            if (!err) {
+                var t = parser.id3v2(data);
+                if (t) {
+                    callback(null, new Tags(t.title, t.album, t.artist, filename, Parser.FOR));
+                } else {
+                    id3p.parse(data).then((t) => {
+                        if (t && t.artist) {
+                            callback(null, new Tags(t.title, t.album, t.artist, filename, Parser.FOR));
+                        } else {
+                            logger.error("Error reading ID3 tag of " + filename);
+                        }
+                    });
+                }
+            } else {
+                callback(null, new Tags(filename, filename, filename, filename, Parser.FOR));
+            }
         });
     }
 };

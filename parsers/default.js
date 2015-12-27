@@ -10,11 +10,7 @@ module.exports = class {
         return "default";
     }
 
-    get HEADER_SIZE() {
-        return 0;
-    }
-
-    parse(_, filename, callback) {
+    parse(fd, filename, callback) {
         callback(null, new Tags(filename, filename, filename, filename, null));
     }
 };

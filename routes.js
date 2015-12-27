@@ -7,14 +7,14 @@ var config = require('./config')
 
 module.exports = function (app, scanner) {
     var port = config.server.port;
-
-    Pouch.plugin(require('pouchdb-quick-search'));
     var db = new Pouch('db', { db: require('memdown') });
 
     // The scanner found a new audio file. Add it to the index
     scanner.on("index", (tag) => {
-        db.put(tag);
-        logger(`Added ${tag.file} to index`);
+        process.nextTick(() => {
+            // db.put(tag);
+            logger(`Added ${tag.file} to index`);
+        });
     });
 
     // Start the scanner
@@ -33,7 +33,6 @@ module.exports = function (app, scanner) {
      */
     app.get('/status', (_, res) => {
         db.info().then((info) => {
-            // - 1 because of the _design doc (it also counts)
             res.json({ total: info.doc_count });
         });
     });
@@ -45,17 +44,23 @@ module.exports = function (app, scanner) {
      */
     app.get('/search', (req, res) => {
         var filterBy = req.query.by || "title";
+        var term = new RegExp(req.query.term, "i");
 
-        db.search({
-            query: req.query.term,
-            fields: [filterBy],
-            include_docs: true,
-            limit: 10
+        console.time("query");
+        db.allDocs({
+            include_docs: true
         }).then((result) => {
+            let filtered = result.rows.map((row) => row.doc).filter((doc) => term.test(doc[filterBy]));
+            console.timeEnd("query");
+
             res.json({
-                result: result.rows.map((row) => row.doc)
+                result: filtered
             });
-        })
+
+        }).catch((err) => {
+            console.timeEnd("query");
+            logger.error("query error", err);
+        });
     });
 
     // Entry point

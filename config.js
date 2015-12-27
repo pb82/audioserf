@@ -6,7 +6,8 @@ module.exports = {
     },
 
     scanner: {
-        entry: __dirname // Filesystem entry point
+        entry: "/run/media/peter/Data/Music/" // Filesystem entry point
+        // entry: __dirname
     },
 
     logger: {

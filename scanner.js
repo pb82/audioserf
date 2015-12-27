@@ -26,9 +26,6 @@ function getMetadata(file, callback) {
     var mimetype = mime.lookup(file);
 
     if (parsers.SUPPORTED.indexOf(mimetype) >= 0) {
-        // "audio/ogg" or "audio/mpeg" atm.
-        let parser = parsers.PARSERS.get(mimetype);
-
         async.waterfall([
             // Open the file
             (cb) => {
@@ -37,22 +34,12 @@ function getMetadata(file, callback) {
 
             // Read the header
             (fd, cb) => {
-                fs.read(fd,
-                    new Buffer(parser.HEADER_SIZE),
-                    0,
-                    parser.HEADER_SIZE,
-                    0,
-                    (err, _, buffer) => {
-                        cb(err, buffer, fd);
-                    });
-            },
+                let parser = parsers.PARSERS.get(mimetype);
 
-            // Parse the header
-            (buffer, fd, cb) => {
-                parser.parse(buffer, trunc(file), (err, tag) => {
+                parser.parse(fd, trunc(file), (err, tag) => {
                     cb(err, fd, tag);
                 });
-            },
+            }
         ], function (err, fd, tag) {
             // Always close the file
             fs.close(fd, () => {
@@ -114,10 +101,6 @@ exports.Scanner = class extends EventEmitter {
     }
 
     run() {
-        if (!this.dir) {
-            return;
-        }
-
         var reader = new Reader(this.dir);
 
         reader.on("file", (file) => {
