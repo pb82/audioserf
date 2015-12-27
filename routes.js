@@ -12,7 +12,7 @@ module.exports = function (app, scanner) {
     // The scanner found a new audio file. Add it to the index
     scanner.on("index", (tag) => {
         process.nextTick(() => {
-            // db.put(tag);
+            db.put(tag);
             logger(`Added ${tag.file} to index`);
         });
     });
